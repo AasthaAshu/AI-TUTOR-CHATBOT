@@ -157,6 +157,23 @@ def main():
                 st.session_state.messages = []
                 st.rerun()
         
+        # Explain term feature
+        if st.session_state.documents_loaded:
+            st.divider()
+            st.subheader("💡 Explain a Term")
+            term_to_explain = st.text_input(
+                "Enter a term or concept to explain",
+                placeholder="e.g., quantum entanglement, photosynthesis",
+                key="term_input"
+            )
+            if st.button("Explain", disabled=not term_to_explain):
+                if term_to_explain:
+                    st.session_state.messages.append({
+                        "role": "user",
+                        "content": f"Explain: {term_to_explain}"
+                    })
+                    st.rerun()
+        
         # Clear documents
         if st.button("🗑️ Clear All Documents", disabled=not st.session_state.documents_loaded):
             if st.session_state.vector_store:
@@ -215,6 +232,9 @@ def main():
                     # Check if this is a summary request
                     is_summary = "summary" in prompt.lower() or "summarize" in prompt.lower()
                     
+                    # Check if this is an explain request
+                    is_explain = prompt.lower().startswith("explain:") or prompt.lower().startswith("explain ")
+                    
                     # Check for specific queries that need more context
                     needs_more_context = any([
                         "all" in prompt.lower(),
@@ -245,6 +265,11 @@ def main():
                             # For summaries, get all document text
                             all_text = "\n\n".join([doc.page_content for doc in docs])
                             response = st.session_state.llm_handler.summarize_text(all_text)
+                        elif is_explain:
+                            # For term explanations, extract the term and get context
+                            term = prompt.replace("explain:", "").replace("Explain:", "").replace("explain", "", 1).strip()
+                            context = "\n\n".join([doc.page_content for doc in docs[:3]])
+                            response = st.session_state.llm_handler.explain_term(term, context)
                         else:
                             response = st.session_state.llm_handler.chat_with_context(
                                 prompt, 

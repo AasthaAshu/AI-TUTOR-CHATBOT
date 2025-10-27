@@ -46,23 +46,23 @@ class LLMHandler:
         except Exception as e:
             return f"Error: {str(e)}"
     
-    def answer_question(self, question: str, context_docs: List[Document]) -> str:
-        """
-        Answer a question using retrieved context
-        Returns the answer string
-        """
-        # Build context from documents
-        context = "\n\n".join([doc.page_content for doc in context_docs[:5]])
+    # def answer_question(self, question: str, context_docs: List[Document]) -> str:
+    #     """
+    #     Answer a question using retrieved context
+    #     Returns the answer string
+    #     """
+    #     # Build context from documents
+    #     context = "\n\n".join([doc.page_content for doc in context_docs[:5]])
         
-        system = "You are an AI tutor. Answer questions ONLY based on the provided context from the student's document. If the context doesn't contain the answer, say so."
-        user = f"""Context from the document:
-{context[:3000]}
+    #     system = "You are an AI tutor. Answer questions ONLY based on the provided context from the student's document. If the context doesn't contain the answer, say so."
+    #     user = f"""Context from the document:
+    #     {context[:3000]}
 
-Question: {question}
+    #      Question: {question}
 
-Answer based ONLY on the context above:"""
+    #      Answer based ONLY on the context above:"""
         
-        return self._generate(system, user, max_tokens=400)
+    #     return self._generate(system, user, max_tokens=400)
     
     def summarize_text(self, text: str, max_length: int = 200) -> str:
         """
@@ -71,9 +71,9 @@ Answer based ONLY on the context above:"""
         system = "You are an AI tutor. Provide a clear, comprehensive summary of the key topics and main points."
         user = f"""Summarize the key topics and main ideas from this text:
 
-{text[:4000]}
+        {text[:4000]}
 
-Provide a structured summary with the main points:"""
+        Provide a structured summary with the main points:"""
         
         return self._generate(system, user, max_tokens=400)
     
@@ -89,12 +89,12 @@ Provide a structured summary with the main points:"""
         
         return self._generate(system, user, max_tokens=200)
     
-    def generate_response(self, prompt: str) -> str:
-        """
-        Generate a general response for any prompt
-        """
-        system = "You are a helpful AI tutor assistant."
-        return self._generate(system, prompt, max_tokens=300)
+    # def generate_response(self, prompt: str) -> str:
+    #     """
+    #     Generate a general response for any prompt
+    #     """
+    #     system = "You are a helpful AI tutor assistant."
+    #     return self._generate(system, prompt, max_tokens=300)
     
     def chat_with_context(self, user_message: str, context_docs: List[Document]) -> str:
         """
@@ -105,14 +105,14 @@ Provide a structured summary with the main points:"""
         context = "\n\n".join([doc.page_content for doc in context_docs[:num_docs]])
         
         system = """You are an AI tutor helping students understand their course materials. 
-Answer ONLY based on the provided context from the student's document. 
-Be specific and accurate. If asked to list multiple items (like "all laws" or "4 laws"), make sure to find and list ALL of them from the context.
-If the context doesn't contain complete information, acknowledge what's missing."""
+        Answer ONLY based on the provided context from the student's document. 
+        Be specific and accurate. If asked to list multiple items (like "all laws" or "4 laws"), make sure to find and list ALL of them from the context.
+        If the context doesn't contain complete information, acknowledge what's missing."""
         user = f"""Context from the document:
-{context[:4000]}
+        {context[:4000]}
 
-Student question: {user_message}
+        Student question: {user_message}
 
-Answer based on the context above:"""
+        Answer based on the context above:"""
         
         return self._generate(system, user, max_tokens=500)
