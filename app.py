@@ -35,6 +35,9 @@ if "documents_loaded" not in st.session_state:
 if "current_file" not in st.session_state:
     st.session_state.current_file = None
 
+if "loaded_files" not in st.session_state:
+    st.session_state.loaded_files = []  # Track all loaded files
+
 
 def initialize_components(api_key: str):
     """Initialize vector store and LLM handler"""
@@ -77,6 +80,9 @@ def process_pdf(uploaded_file, api_key):
             if success:
                 st.session_state.documents_loaded = True
                 st.session_state.current_file = uploaded_file.name
+                # Add to loaded files list if not already there
+                if uploaded_file.name not in st.session_state.loaded_files:
+                    st.session_state.loaded_files.append(uploaded_file.name)
                 st.success(f"✅ Successfully processed {len(chunks)} chunks from {uploaded_file.name}")
                 return True
             else:
@@ -99,16 +105,16 @@ def main():
     with st.sidebar:
         st.header("📋 Setup")
         
-        # API Key input
+        # Groq API key input
         api_key = st.text_input(
-            "HuggingFace API Key",
+            "Groq API Key",
             type="password",
-            help="Get your free API key from https://huggingface.co/settings/tokens"
+            help="Get your free API key from https://console.groq.com"
         )
         
         if not api_key:
-            st.warning("⚠️ Please enter your HuggingFace API key to continue")
-            st.info("👉 Get a free API key at: https://huggingface.co/settings/tokens")
+            st.warning("⚠️ Please enter your Groq API key")
+            st.info("🎉 Groq is FREE and FAST! Get your key at: https://console.groq.com")
         
         st.divider()
         
@@ -124,9 +130,11 @@ def main():
             if st.button("Process PDF", type="primary"):
                 process_pdf(uploaded_file, api_key)
         
-        # Document info
-        if st.session_state.documents_loaded and st.session_state.current_file:
-            st.success(f"✅ Loaded: {st.session_state.current_file}")
+        # Show loaded files
+        if st.session_state.loaded_files:
+            st.header("📚 Loaded Documents")
+            for filename in st.session_state.loaded_files:
+                st.text(f"📄 {filename}")
         
         st.divider()
         
@@ -155,13 +163,15 @@ def main():
                 st.session_state.vector_store.clear_vectorstore()
                 st.session_state.documents_loaded = False
                 st.session_state.current_file = None
+                st.session_state.loaded_files = []  # Clear loaded files list
                 st.session_state.messages = []
                 st.success("All documents cleared!")
                 st.rerun()
     
     # Main chat area
     if not api_key:
-        st.info("👈 Please enter your HuggingFace API key in the sidebar to get started")
+        st.info("👈 Please enter your Groq API key in the sidebar to get started")
+        st.info("🎉 **Why Groq?** It's free, fast (10x faster than ChatGPT), and works great!")
         return
     
     if not st.session_state.documents_loaded:
@@ -202,18 +212,44 @@ def main():
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 try:
+                    # Check if this is a summary request
+                    is_summary = "summary" in prompt.lower() or "summarize" in prompt.lower()
+                    
+                    # Check for specific queries that need more context
+                    needs_more_context = any([
+                        "all" in prompt.lower(),
+                        "list" in prompt.lower(),
+                        "laws" in prompt.lower(),
+                        "chapter" in prompt.lower(),
+                        "rules" in prompt.lower()
+                    ])
+                    
+                    # Get more documents for summary or comprehensive queries
+                    k = 10 if (is_summary or needs_more_context) else 5
+                    
+                    # Expand query for better search
+                    search_query = prompt
+                    # Handle "1%" searches by also searching for variations
+                    if "1%" in prompt or "one percent" in prompt.lower():
+                        search_query = prompt + " improvement tiny gains marginal"
+                    
                     # Get retriever
-                    retriever = st.session_state.vector_store.get_retriever(k=3)
+                    retriever = st.session_state.vector_store.get_retriever(k=k)
                     
                     if retriever:
                         # Get relevant documents
-                        docs = st.session_state.vector_store.similarity_search(prompt, k=3)
+                        docs = st.session_state.vector_store.similarity_search(search_query, k=k)
                         
                         # Generate response with context
-                        response = st.session_state.llm_handler.chat_with_context(
-                            prompt, 
-                            docs
-                        )
+                        if is_summary:
+                            # For summaries, get all document text
+                            all_text = "\n\n".join([doc.page_content for doc in docs])
+                            response = st.session_state.llm_handler.summarize_text(all_text)
+                        else:
+                            response = st.session_state.llm_handler.chat_with_context(
+                                prompt, 
+                                docs
+                            )
                         
                         st.markdown(response)
                         

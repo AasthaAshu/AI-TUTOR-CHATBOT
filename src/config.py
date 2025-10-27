@@ -11,11 +11,10 @@ HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
 
 # Model Settings
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-LLM_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"  # Free via HuggingFace Inference API
+LLM_MODEL = "google/flan-t5-base"  # Reliable free model via HuggingFace Inference API
 
-# ChromaDB Settings
-CHROMA_PERSIST_DIRECTORY = "./data/chroma_db"
-COLLECTION_NAME = "documents"
+# FAISS Settings
+FAISS_PERSIST_DIRECTORY = "./data/faiss_db"
 
 # Document Processing Settings
 CHUNK_SIZE = 1000
